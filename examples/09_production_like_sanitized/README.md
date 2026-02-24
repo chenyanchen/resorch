@@ -1,4 +1,4 @@
-# production_like_sanitized
+# 09_production_like_sanitized
 
 A production-like, sanitized configuration example inspired by a large real-world pipeline config.
 
@@ -24,7 +24,7 @@ docker compose -f ./docker-compose.yml up -d
 ## Run
 
 ```bash
-go run ./production_like_sanitized -config ./production_like_sanitized/config.sanitized.yaml
+go run ./09_production_like_sanitized -config ./09_production_like_sanitized/config.sanitized.yaml
 ```
 
 ## Try API

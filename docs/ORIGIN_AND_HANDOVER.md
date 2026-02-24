@@ -165,7 +165,7 @@ Current shape:
 
 ## 9. New Runnable Real-World Examples Added
 
-## 9.1 `examples/http_user_article_kv`
+## 9.1 `examples/08_http_user_article_kv`
 
 A real HTTP service without hot reload.
 
@@ -176,7 +176,7 @@ A real HTTP service without hot reload.
   2. redis
   3. postgres (pgx)
 
-## 9.2 `examples/production_like_sanitized`
+## 9.2 `examples/09_production_like_sanitized`
 
 A production-like sanitized setup inspired by a complex real pipeline config.
 
@@ -205,14 +205,14 @@ docker compose -f ./docker-compose.yml up -d
 Run example 1:
 
 ```bash
-go run ./http_user_article_kv
+go run ./08_http_user_article_kv
 curl "http://127.0.0.1:18080/v1/summary?user_id=1&article_id=101"
 ```
 
 Run example 2:
 
 ```bash
-go run ./production_like_sanitized -config ./production_like_sanitized/config.sanitized.yaml
+go run ./09_production_like_sanitized -config ./09_production_like_sanitized/config.sanitized.yaml
 curl "http://127.0.0.1:18081/v1/recommend?user_id=1"
 ```
 
@@ -242,7 +242,7 @@ If you start a new session and want fast context transfer, provide this document
 
 1. read `README.md` and this file,
 2. inspect `exp/reload` API boundary,
-3. inspect `examples/http_user_article_kv` and `examples/production_like_sanitized`,
+3. inspect `examples/08_http_user_article_kv` and `examples/09_production_like_sanitized`,
 4. keep `main` branch protection constraints in mind (PR-based merge).
 
 That is enough context to continue work without replaying old conversation history.

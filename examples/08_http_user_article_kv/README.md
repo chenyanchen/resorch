@@ -1,4 +1,4 @@
-# http_user_article_kv
+# 08_http_user_article_kv
 
 A runnable HTTP service example built with `resorch`.
 
@@ -22,7 +22,7 @@ docker compose -f ./docker-compose.yml up -d
 ## Run
 
 ```bash
-go run ./http_user_article_kv
+go run ./08_http_user_article_kv
 ```
 
 ## Try API

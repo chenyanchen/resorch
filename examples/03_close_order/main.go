@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/chenyanchen/resorch"
 )
@@ -20,7 +19,6 @@ type node struct {
 
 func main() {
 	reg := resorch.NewRegistry()
-	order := make([]string, 0, 2)
 
 	resorch.MustRegister(reg, "node", "dep", resorch.Definition[nodeOpt, *node]{
 		Deps: func(opt nodeOpt) ([]resorch.ID, error) {
@@ -33,7 +31,7 @@ func main() {
 			return &node{Name: opt.Name}, nil
 		},
 		Close: func(_ context.Context, n *node) error {
-			order = append(order, n.Name)
+			fmt.Printf("node %s closed\n", n.Name)
 			return nil
 		},
 	})
@@ -48,7 +46,6 @@ func main() {
 	must(err)
 
 	must(container.Close(context.Background()))
-	fmt.Println("close order:", strings.Join(order, ","))
 }
 
 func rawJSON(v any) json.RawMessage {

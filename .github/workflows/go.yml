@@ -83,4 +83,4 @@ jobs:
 
       - name: Run hot reload example
         working-directory: examples
-        run: go run ./hot_reload_http
+        run: go run ./06_hot_reload_http

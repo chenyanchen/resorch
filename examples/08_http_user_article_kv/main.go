@@ -7,19 +7,19 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
 	"time"
 
-	kvpkg "github.com/chenyanchen/kv"
+	"github.com/chenyanchen/kv"
 	"github.com/chenyanchen/kv/cachekv"
 	"github.com/chenyanchen/kv/layerkv"
-	"github.com/chenyanchen/resorch"
-	"github.com/chenyanchen/resorch/examples/internal/demo"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
+
+	"github.com/chenyanchen/resorch"
+	"github.com/chenyanchen/resorch/examples/internal/demo"
 )
 
 type postgresOpt struct {
@@ -99,14 +99,14 @@ func main() {
 		},
 	})
 
-	resorch.MustRegister(reg, "userKV", "layered", resorch.Definition[layeredKVOpt, kvpkg.KV[int64, demo.User]]{
+	resorch.MustRegister(reg, "userKV", "layered", resorch.Definition[layeredKVOpt, kv.KV[int64, demo.User]]{
 		Deps: func(opt layeredKVOpt) ([]resorch.ID, error) {
 			return []resorch.ID{
 				{Kind: "redis", Name: opt.Redis},
 				{Kind: "postgres", Name: opt.Database},
 			}, nil
 		},
-		Build: func(ctx context.Context, r resorch.Resolver, opt layeredKVOpt) (kvpkg.KV[int64, demo.User], error) {
+		Build: func(ctx context.Context, r resorch.Resolver, opt layeredKVOpt) (kv.KV[int64, demo.User], error) {
 			redisClient, err := resorch.ResolveAs[*redis.Client](ctx, r, resorch.ID{Kind: "redis", Name: opt.Redis})
 			if err != nil {
 				return nil, err
@@ -135,14 +135,14 @@ func main() {
 		},
 	})
 
-	resorch.MustRegister(reg, "articleKV", "layered", resorch.Definition[layeredKVOpt, kvpkg.KV[int64, demo.Article]]{
+	resorch.MustRegister(reg, "articleKV", "layered", resorch.Definition[layeredKVOpt, kv.KV[int64, demo.Article]]{
 		Deps: func(opt layeredKVOpt) ([]resorch.ID, error) {
 			return []resorch.ID{
 				{Kind: "redis", Name: opt.Redis},
 				{Kind: "postgres", Name: opt.Database},
 			}, nil
 		},
-		Build: func(ctx context.Context, r resorch.Resolver, opt layeredKVOpt) (kvpkg.KV[int64, demo.Article], error) {
+		Build: func(ctx context.Context, r resorch.Resolver, opt layeredKVOpt) (kv.KV[int64, demo.Article], error) {
 			redisClient, err := resorch.ResolveAs[*redis.Client](ctx, r, resorch.ID{Kind: "redis", Name: opt.Redis})
 			if err != nil {
 				return nil, err
@@ -179,11 +179,11 @@ func main() {
 			}, nil
 		},
 		Build: func(ctx context.Context, r resorch.Resolver, opt httpOpt) (*runningHTTPServer, error) {
-			userKV, err := resorch.ResolveAs[kvpkg.KV[int64, demo.User]](ctx, r, resorch.ID{Kind: "userKV", Name: opt.UserKV})
+			userKV, err := resorch.ResolveAs[kv.KV[int64, demo.User]](ctx, r, resorch.ID{Kind: "userKV", Name: opt.UserKV})
 			if err != nil {
 				return nil, err
 			}
-			articleKV, err := resorch.ResolveAs[kvpkg.KV[int64, demo.Article]](ctx, r, resorch.ID{Kind: "articleKV", Name: opt.ArticleKV})
+			articleKV, err := resorch.ResolveAs[kv.KV[int64, demo.Article]](ctx, r, resorch.ID{Kind: "articleKV", Name: opt.ArticleKV})
 			if err != nil {
 				return nil, err
 			}
@@ -194,7 +194,7 @@ func main() {
 				articleID := queryInt64(req, "article_id", 101)
 
 				user, err := userKV.Get(req.Context(), userID)
-				if errors.Is(err, kvpkg.ErrNotFound) {
+				if errors.Is(err, kv.ErrNotFound) {
 					http.Error(w, "user not found", http.StatusNotFound)
 					return
 				}
@@ -204,7 +204,7 @@ func main() {
 				}
 
 				article, err := articleKV.Get(req.Context(), articleID)
-				if errors.Is(err, kvpkg.ErrNotFound) {
+				if errors.Is(err, kv.ErrNotFound) {
 					http.Error(w, "article not found", http.StatusNotFound)
 					return
 				}
@@ -313,9 +313,9 @@ func queryInt64(r *http.Request, key string, fallback int64) int64 {
 }
 
 func waitForSignal() {
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-	<-sigCh
+	sigCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+	<-sigCtx.Done()
 }
 
 func rawJSON(v any) json.RawMessage {

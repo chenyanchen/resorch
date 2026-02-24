@@ -253,30 +253,41 @@ func (m *mockScoreService) Score(user demo.User, article demo.Article, base, aff
 	return base * tierBoost * categoryBoost * affinity
 }
 
-func main() {
-	configPath := flag.String("config", "./examples/production_like_sanitized/config.sanitized.yaml", "path to sanitized config")
+func loadConfigFromFlag() (configFile, error) {
+	configPath := flag.String("config", "./09_production_like_sanitized/config.sanitized.yaml", "path to sanitized config")
 	flag.Parse()
+	return loadConfig(*configPath)
+}
 
-	cfg, err := loadConfig(*configPath)
-	must(err)
-
+func resolveResources(cfg configFile) (*resorch.Container, error) {
 	reg := resorch.NewRegistry()
 	registerCoreDefinitions(reg)
 	registerPipelineDefinitions(reg)
 
 	specs, err := buildNodeSpecs(cfg)
-	must(err)
+	if err != nil {
+		return nil, err
+	}
 
 	container, err := resorch.NewContainer(reg, specs)
-	must(err)
+	if err != nil {
+		return nil, err
+	}
 
-	_, err = container.Resolve(context.Background(), resorch.ID{Kind: "api", Name: "recommendation"})
-	must(err)
+	if _, err := container.Resolve(context.Background(), resorch.ID{Kind: "api", Name: "recommendation"}); err != nil {
+		_ = container.Close(context.Background())
+		return nil, err
+	}
+	return container, nil
+}
 
+func runServer(container *resorch.Container) error {
 	fmt.Printf("sanitized production-like API ready on http://127.0.0.1:18081/v1/recommend?user_id=1\n")
 	fmt.Println("press Ctrl+C to exit")
-	waitForSignal()
-	must(container.Close(context.Background()))
+	sigCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+	<-sigCtx.Done()
+	return container.Close(context.Background())
 }
 
 func registerCoreDefinitions(reg *resorch.Registry) {
@@ -724,12 +735,6 @@ func queryInt64(r *http.Request, key string, fallback int64) int64 {
 		return fallback
 	}
 	return parsed
-}
-
-func waitForSignal() {
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-	<-sigCh
 }
 
 func must(err error) {

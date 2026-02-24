@@ -8,6 +8,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/chenyanchen/resorch"
@@ -28,7 +29,7 @@ func main() {
 	reg := resorch.NewRegistry()
 	resorch.MustRegister(reg, "http-server", "std", resorch.Definition[httpServerOpt, *runningHTTPServer]{
 		Build: func(_ context.Context, _ resorch.Resolver, opt httpServerOpt) (*runningHTTPServer, error) {
-			addr := fmt.Sprintf("127.0.0.1:%d", opt.Port)
+			addr := net.JoinHostPort("127.0.0.1", strconv.Itoa(opt.Port))
 			listener, err := net.Listen("tcp", addr)
 			if err != nil {
 				return nil, err
@@ -78,7 +79,7 @@ func main() {
 	})
 	must(err)
 
-	time.Sleep(80 * time.Millisecond)
+	time.Sleep(time.Second)
 	fmt.Println("first:", mustGET(port1))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -94,7 +95,7 @@ func main() {
 	must(err)
 	fmt.Printf("reconcile rebuilt=%d reused=%d\n", len(result.Rebuilt), len(result.Reused))
 
-	time.Sleep(120 * time.Millisecond)
+	time.Sleep(time.Second)
 	_, oldErr := http.Get(fmt.Sprintf("http://127.0.0.1:%d", port1))
 	fmt.Println("old port closed:", oldErr != nil)
 	fmt.Println("new:", mustGET(port2))
