@@ -1,0 +1,137 @@
+redis:
+  - name: profile-cache
+    driver: single
+    options:
+      addr: 127.0.0.1:6381
+      db: 0
+  - name: article-cache
+    driver: single
+    options:
+      addr: 127.0.0.1:6382
+      db: 0
+
+database:
+  - name: main
+    driver: pgx
+    options:
+      dsn: postgres://resorch:resorch@127.0.0.1:55432/resorch?sslmode=disable
+
+profileService:
+  - name: profile
+    driver: mock
+    options: {}
+
+policyService:
+  - name: policy
+    driver: mock
+    options: {}
+
+scoreService:
+  - name: score
+    driver: mock
+    options: {}
+
+userKV:
+  - name: main
+    driver: layered
+    options:
+      redis: profile-cache
+      database: main
+
+articleKV:
+  - name: main
+    driver: layered
+    options:
+      redis: article-cache
+      database: main
+
+logic:
+  - name: RequestLog
+    driver: noop
+    options:
+      message: request received
+  - name: UserFeature
+    driver: user-feature
+    options:
+      userKV: main
+      profileService: profile
+  - name: Recall
+    driver: recall
+    options:
+      database: main
+      limit: 20
+  - name: ArticleFeature
+    driver: article-feature
+    options:
+      articleKV: main
+  - name: RuleFilter
+    driver: rule-filter
+    options:
+      policyService: policy
+  - name: Rank
+    driver: rank
+    options:
+      scoreService: score
+  - name: ResponseLog
+    driver: noop
+    options:
+      message: response emitted
+
+stage:
+  - name: GlobalFeatureStage
+    driver: default
+    options:
+      execMode: concurrent
+      logics:
+        - RequestLog
+        - UserFeature
+  - name: RecallStage
+    driver: default
+    options:
+      execMode: concurrent
+      logics:
+        - Recall
+  - name: FeatureStage
+    driver: default
+    options:
+      execMode: concurrent
+      logics:
+        - ArticleFeature
+  - name: FilterStage
+    driver: default
+    options:
+      execMode: sequential
+      logics:
+        - RuleFilter
+  - name: RankStage
+    driver: default
+    options:
+      execMode: sequential
+      logics:
+        - Rank
+  - name: LogStage
+    driver: default
+    options:
+      execMode: sequential
+      logics:
+        - ResponseLog
+
+pipeline:
+  - name: SanitizedProdPipeline
+    driver: default
+    options:
+      timeout: 2s
+      stages:
+        - GlobalFeatureStage
+        - RecallStage
+        - FeatureStage
+        - FilterStage
+        - RankStage
+        - LogStage
+
+api:
+  - name: recommendation
+    driver: std-http
+    options:
+      listen: 127.0.0.1:18081
+      pipeline: SanitizedProdPipeline

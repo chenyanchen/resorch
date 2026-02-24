@@ -1,8 +1,38 @@
 # resorch
 
-Declarative resource orchestration and lifecycle runtime for Go.
+Framework-agnostic declarative resource orchestration and lifecycle runtime for Go.
+It manages multi-type, multi-instance resources with explicit dependencies.
 
-`resorch` is a framework-agnostic core for managing multi-type, multi-instance resources with explicit dependencies.
+## Why `resorch` Exists
+
+`resorch` exists to turn repeated, high-risk runtime wiring work into a reusable infrastructure capability.
+
+- Unify semantics across projects: dependency declaration, build, close, and reconcile follow one contract.
+- Reduce systemic risk: graph validation, reverse-topological close, and rollback behavior are implemented once and hardened centrally.
+- Improve change velocity: onboarding a new resource is usually definition registration + spec declaration, not rewriting another container framework.
+- Enable control-plane evolution: config-driven editing, validation, DAG visualization, and hot apply become sustainable only with a shared runtime kernel.
+
+## When `resorch` Is Probably Not Needed
+
+- You only have one service with very stable dependencies.
+- Dependency wiring is simple and rarely changes.
+- You do not need runtime config apply/hot switch semantics.
+
+## Value Signals
+
+You can evaluate whether `resorch` is paying off by tracking:
+
+- time to onboard a new resource kind
+- cross-project reuse ratio of resource definitions
+- incident rate caused by config/wiring changes
+- hot-reload rollback success rate
+
+## How It Works
+
+1. Register resource definitions by `(kind, driver)` with `Definition[Opt, Out]`.
+2. Declare instances with `NodeSpec` (`kind/name/driver/options`).
+3. Build a `Container` to compile and validate the dependency graph before runtime.
+4. Resolve resources lazily at runtime and close them in reverse-topological order.
 
 ## Features
 
@@ -12,12 +42,6 @@ Declarative resource orchestration and lifecycle runtime for Go.
 - Runtime lazy initialization, caching, and singleflight deduplication
 - Reverse-topological shutdown lifecycle
 - Graph export support (`DOT` and `Mermaid`)
-
-## Installation
-
-```bash
-go get github.com/chenyanchen/resorch
-```
 
 ## Quick Example
 
@@ -53,13 +77,17 @@ if err != nil {
 defer container.Close(context.Background())
 ```
 
+## Installation
+
+```bash
+go get github.com/chenyanchen/resorch
+```
+
 ## Examples
 
-- `go run ./examples/basic_dependency`
-- `go run ./examples/multiple_instances`
-- `go run ./examples/close_order`
-- `go run ./examples/graph_export`
-- `go run ./examples/hot_reload_http`
+Examples are maintained in the dedicated `./examples` module.
+
+For run instructions of each example, see: [examples/README.md](examples/README.md)
 
 ## Experimental: `exp/reload`
 
@@ -72,3 +100,9 @@ defer container.Close(context.Background())
 5. Close expired instances from the old container
 
 API under `exp/` is experimental and may change before `v1.0.0`.
+
+## Project Story and Handover
+
+For project origin, design decisions, and continuation guidance, see:
+
+- `docs/ORIGIN_AND_HANDOVER.md`
