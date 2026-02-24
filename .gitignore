@@ -22,3 +22,6 @@ go.work.sum
 .DS_Store
 .idea/
 .vscode/
+
+# Local agent guidance
+AGENTS.md
