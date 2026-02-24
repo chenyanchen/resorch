@@ -48,3 +48,5 @@ jobs:
           cache: true
       - name: Build examples
         run: go build ./examples/...
+      - name: Run hot reload example
+        run: go run ./examples/hot_reload_http

@@ -59,3 +59,16 @@ defer container.Close(context.Background())
 - `go run ./examples/multiple_instances`
 - `go run ./examples/close_order`
 - `go run ./examples/graph_export`
+- `go run ./examples/hot_reload_http`
+
+## Experimental: `exp/reload`
+
+`exp/reload` provides experimental reconcile-based hot reload:
+
+1. Build a next container from new specs
+2. Reuse unchanged instances
+3. Prewarm rebuilt instances
+4. Atomically switch current container
+5. Close expired instances from the old container
+
+API under `exp/` is experimental and may change before `v1.0.0`.
